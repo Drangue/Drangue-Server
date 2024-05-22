@@ -18,9 +18,9 @@ def detect():
     data = request.json
 
     # Check if 'features' array exists in JSON data
-    if 'features' in data and isinstance(data['features'], list):
+    if 'polygons' in data and isinstance(data['polygons'], list):
         # Process features using controller function
-        result = detect_handler(data['features'])
+        result = detect_handler(data)
 
         # Return the result as JSON
         return jsonify({'result': result})

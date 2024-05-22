@@ -36,7 +36,7 @@ class FirebaseHandler:
         }
         self.jobs_ref.child(jobid).set(job_data)
     
-    def update_job(self, jobid, startTime=None, endTime=None, isdone=None, geojsonpath=None, shapefiles=None):
+    def update_job(self, jobid, startTime=None, endTime=None, isdone=None, features=None):
         update_data = {}
         folder_name = f"job_{jobid}"
         if startTime is not None:
@@ -45,12 +45,21 @@ class FirebaseHandler:
             update_data["endTime"] = endTime
         if isdone is not None:
             update_data["isdone"] = isdone
-        if geojsonpath is not None:
-            file_urls = self.upload_files(folder_name, [geojsonpath])
-            update_data["geojsonpath"] = file_urls[0]
-        if shapefiles is not None:
-            file_urls = self.upload_files(folder_name, shapefiles)
-            update_data["shapefiles"] = file_urls
+            
+        for key, value in features.items():
+            geojsonpath = value["geojson"]
+            shapefiles = value["shapefile"]
+            polygons = value["polygons"]
+           
+            update_data[key] = { }
+            if geojsonpath is not None:
+                file_urls = self.upload_files(folder_name, [geojsonpath])
+                update_data[key]["geojsonpath"] = file_urls[0]
+            if shapefiles is not None:
+                file_urls = self.upload_files(folder_name, [shapefiles])
+                update_data[key]["shapefiles"] = file_urls[0]
+            if polygons is not None:
+                update_data[key]["polygons"] = polygons
         self.jobs_ref.child(jobid).update(update_data)
     
     def get_job(self, jobid):

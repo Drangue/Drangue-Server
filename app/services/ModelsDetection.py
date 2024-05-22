@@ -82,24 +82,24 @@ class ModelsDetection:
                 gdal.Translate(output_filename, ds, format='GTiff', projWin=[ulx, uly, lrx, lry])
                 print(f"Created {output_filename}")
     def polygons_to_shapefile(self, polygons, default_crs="EPSG:4326"):
-        output_file = tempfile.mkdtemp()
-        print(output_file)
+        output_dir = tempfile.mkdtemp()
+        print(output_dir)
 
-        crs = default_crs # Get the coordinate reference system from the TIFF
-        
+        crs = default_crs  # Get the coordinate reference system from the TIFF
+
         # Create a list of Polygon objects from the list of coordinates
         polygon_shapes = [Polygon(poly) for poly in polygons]
-        
+
         # Create a GeoDataFrame
         gdf = gpd.GeoDataFrame(index=range(len(polygon_shapes)), crs=crs, geometry=polygon_shapes)
-        
+
         # Save to a shapefile
-        gdf.to_file(output_file, driver='ESRI Shapefile')
-        extensions = ["shp", "cpg", "dbf", "prj", "shx"]
+        gdf.to_file(output_dir, driver='ESRI Shapefile')
         
-        base_name= os.path.basename(output_file)
-        output_files = [f"{output_file}\{base_name}.{ext}" for ext in extensions]
-        return output_files
+        # Zip the folder
+        zip_file_path = shutil.make_archive(output_dir, 'zip', output_dir)
+        
+        return zip_file_path
     def polygons_to_geojson(self, polygons, default_crs="EPSG:4326"):
         # Create a unique temporary file name
         output_file_path = tempfile.mktemp(suffix=".geojson")
@@ -181,33 +181,38 @@ class ModelsDetection:
         ds = None
         return geo_coords
     
-    def detect_polygons(self, polygons,zoom, output_file, area_km2):
-        self.create_geotiff_with_area(polygons=polygons, zoom_level=18, output_file=output_file, area_km2=area_km2)
-        results =  self.models["landslidemodel"].predict("detection", imgsz=1280, conf=0.5, iou=0.5,save=False)
-        detected_polys = []
-        for result in results:
+    def detect_polygons(self, polygons,zoom, output_file, area_km2, features_selected):
+        
+        returned_output = {}
+        for feature in features_selected:
+            self.create_geotiff_with_area(polygons=polygons, zoom_level=18, output_file=output_file, area_km2=area_km2)
+            results =  self.models[feature].predict("detection", imgsz=1280, conf=0.5, iou=0.5,save=False)
+            detected_polys = []
+            for result in results:
 
-            try:
-                masks = result.masks.xy 
-            except:
-                continue
+                try:
+                    masks = result.masks.xy 
+                except:
+                    continue
+                
+                for poly in masks:
+                    poly_list = poly.tolist()
+                    print(poly_list)
+                    detected_coordinates = self.pixels_to_coordinates(result.path, poly.tolist())
+                    print(detected_coordinates)
+
+                    detected_polys.append(detected_coordinates)
+            shutil.rmtree('detection')
             
-            for poly in masks:
-                poly_list = poly.tolist()
-                print(poly_list)
-                detected_coordinates = self.pixels_to_coordinates(result.path, poly.tolist())
-                print(detected_coordinates)
-
-                detected_polys.append(detected_coordinates)
-        shutil.rmtree('detection')
-        
-        
-        shapefile_output = self.polygons_to_shapefile(detected_polys)
-        geojson_output = self.polygons_to_geojson(detected_polys)
-        returned_output = {
-            "polygons": detected_polys,
-            "shapefile": shapefile_output, 
-            "geojson": geojson_output
-        }
+            
+            shapefile_output = self.polygons_to_shapefile(detected_polys)
+            geojson_output = self.polygons_to_geojson(detected_polys)
+            
+            returned_output[feature] = {
+                "polygons": detected_polys,
+                "shapefile": shapefile_output, 
+                "geojson": geojson_output
+            }
+ 
         return returned_output
            
