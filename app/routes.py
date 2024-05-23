@@ -16,6 +16,7 @@ def index():
 def detect():
     # Get JSON data from request
     data = request.json
+    print(data)
 
     # Check if 'features' array exists in JSON data
     if 'polygons' in data and isinstance(data['polygons'], list):

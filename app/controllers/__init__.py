@@ -31,6 +31,7 @@ def detect_handler(data):
 
     # Function to process each polygon asynchronously
     def process_polygon(polygon, features_selected):
+        print(features_selected)
         print("checkpoint 1")
         job_id = f"job_{uuid.uuid4()}"
         startTime = datetime.now().isoformat()
@@ -54,6 +55,22 @@ def detect_handler(data):
         try:
             print("checkpoint 3")
             output = modelsDetection.detect_polygons(polygons=polygon, zoom=18, output_file="temp.tiff", area_km2=4, features_selected=features_selected)
+            
+            # Success
+            print("checkpoint 5")
+            endTime = datetime.now().isoformat()
+            firebase_handler.update_job(jobid=job_id,startTime=startTime, endTime=endTime,features=output, isdone=True)
+
+            # Success Email
+            html_content = plaintext_content = f"""
+            A job with id {job_id} has been processed successfully.
+            
+            please use this link to access it https://drangue.com/jobs/{job_id}
+            
+            or this link to access all projects https://drangue.com/jobs
+            """
+            emailSender.send_email(recipient_name, recipient_email, subject, html_content, plaintext_content)
+            print("checkpoint 6")
         except Exception as e:
             print("checkpoint 4")
             print(e)
@@ -67,24 +84,8 @@ def detect_handler(data):
 
             # Fail
             endTime = datetime.now().isoformat()
-            firebase_handler.update_job(jobid=job_id,endTime=endTime, isdone="Failed")
+            firebase_handler.update_job(jobid=job_id,startTime=startTime, endTime=endTime, isdone="Failed")
 
-
-        # Success
-        print("checkpoint 5")
-        endTime = datetime.now().isoformat()
-        firebase_handler.update_job(jobid=job_id,endTime=endTime,features=output,isdone=True)
-
-        # Success Email
-        html_content = plaintext_content = f"""
-        A job with id {job_id} has been processed successfully.
-        
-        please use this link to access it https://drangue.com/jobs/{job_id}
-        
-        or this link to access all projects https://drangue.com/jobs
-        """
-        emailSender.send_email(recipient_name, recipient_email, subject, html_content, plaintext_content)
-        print("checkpoint 6")
 
     # Start a new thread to process the polygon asynchronously
     threading.Thread(target=process_polygon, args=(polygons,features_selected)).start()

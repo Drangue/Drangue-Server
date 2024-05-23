@@ -6,3 +6,5 @@ __pycache__
 
 # Ignore serverenv folder
 serverenv/
+
+node_modules/
