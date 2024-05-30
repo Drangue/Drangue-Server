@@ -1,5 +1,5 @@
 from app import app
-from app.controllers import process_request, detect_handler
+from app.controllers import process_request, detect_handler, jobs_retrieve_handler,display_jobs_retrieve_handler
 from flask import request, jsonify
 
 @app.route('/')
@@ -22,9 +22,29 @@ def detect():
     if 'polygons' in data and isinstance(data['polygons'], list):
         # Process features using controller function
         result = detect_handler(data)
-
+    
         # Return the result as JSON
         return jsonify({'result': result})
     else:
         # If 'features' array is missing or not a list, return an error response
         return jsonify({'error': 'Invalid JSON data. Expected "features" array.'}), 400
+    
+    
+@app.route('/user-jobs', methods=['POST'])
+def get_job():
+    # Get JSON data from request
+    data = request.json
+
+    jobs = jobs_retrieve_handler(data)
+    
+    return jobs
+
+@app.route('/job-display', methods=['POST'])
+def get_jobs():
+    # Get JSON data from request
+    data = request.json
+
+    job = display_jobs_retrieve_handler(data)
+    
+    return job
+

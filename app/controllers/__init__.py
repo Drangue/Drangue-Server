@@ -1,5 +1,7 @@
 from datetime import datetime
 import uuid
+
+from flask import jsonify
 from app.services import perform_operation
 from app.services.ModelsDetection import ModelsDetection
 from app.models.FirebaseHandler import FirebaseHandler
@@ -35,16 +37,19 @@ def detect_handler(data):
         print("checkpoint 1")
         job_id = f"job_{uuid.uuid4()}"
         startTime = datetime.now().isoformat()
+        recipient_email = "mshami2021@gmail.com"
         firebase_handler.add_job(
-            userid="user123",
+            userid=recipient_email,
             jobid=job_id,
             startTime=startTime,  # Example start time
-            isdone=False
+            isdone=False,
+            jobTitle=project_name,
+            jobDescription=project_description
         )
 
         # Confirmation Email
         recipient_name = "Mohammed Alshami"
-        recipient_email = "mshami2021@gmail.com"
+        
         subject = "Confirmation Email @noreply"
         html_content = plaintext_content = f"""
         A job with id {job_id} has been created, we'll notify you once the job is done
@@ -59,15 +64,16 @@ def detect_handler(data):
             # Success
             print("checkpoint 5")
             endTime = datetime.now().isoformat()
-            firebase_handler.update_job(jobid=job_id,startTime=startTime, endTime=endTime,features=output, isdone=True)
+            firebase_handler.update_job(userid=recipient_email, jobTitle=project_name,jobDescription=project_description,jobid=job_id,startTime=startTime, endTime=endTime,features=output, isdone=True)
 
             # Success Email
             html_content = plaintext_content = f"""
             A job with id {job_id} has been processed successfully.
             
-            please use this link to access it https://drangue.com/jobs/{job_id}
+            please use this link to access it http://localhost:3001/display_project?jobid={job_id}
             
-            or this link to access all projects https://drangue.com/jobs
+            
+            or this link to access all projects https://drangue.com/projects
             """
             emailSender.send_email(recipient_name, recipient_email, subject, html_content, plaintext_content)
             print("checkpoint 6")
@@ -90,3 +96,41 @@ def detect_handler(data):
     # Start a new thread to process the polygon asynchronously
     threading.Thread(target=process_polygon, args=(polygons,features_selected)).start()
     return "Success"
+
+
+
+def display_jobs_retrieve_handler(data):
+    # Extract the user email from the input data
+    
+    if 'jobid' in data:
+        user_email = data['jobid']
+
+
+        # Initialize the Firebase handler
+        firebase_handler = FirebaseHandler()
+
+        # Get jobs by user email
+        job = firebase_handler.get_job(user_email)
+        # Return the retrieved jobs as JSON
+        return jsonify({'job': job})
+    else:
+        # If 'email' is missing, return an error response
+        return jsonify({'error': 'Invalid JSON data. Expected "email" field.'}), 400
+    
+    
+def jobs_retrieve_handler(data):
+    # Extract the user email from the input data
+    
+    if 'userid' in data:
+        user_email = data['userid']
+
+        # Initialize the Firebase handler
+        firebase_handler = FirebaseHandler()
+
+        # Get jobs by user email
+        jobs = firebase_handler.get_jobs_by_email(user_email)
+        # Return the retrieved jobs as JSON
+        return jsonify({'jobs': jobs})
+    else:
+        # If 'email' is missing, return an error response
+        return jsonify({'error': 'Invalid JSON data. Expected "email" field.'}), 400

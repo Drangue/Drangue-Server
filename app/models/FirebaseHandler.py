@@ -24,23 +24,28 @@ class FirebaseHandler:
         # Initialize the jobs table
         self.jobs_ref = self.db.child("jobs")
 
-    def add_job(self, userid, jobid, startTime, isdone=False):
+    def add_job(self, userid, jobid, startTime,  jobTitle, jobDescription, isdone=False,):
         job_data = {
-            "userid": userid,
+            "userID": userid,
+            "title": jobTitle,
+            "description": jobDescription,
             "jobid": jobid,
             "startTime": startTime,
             "isdone": isdone
         }
         self.jobs_ref.child(jobid).set(job_data)
 
-    def update_job(self, jobid, startTime=None, endTime=None, isdone=None, features=None):
+    def update_job(self, userid, jobid, jobTitle, jobDescription,  startTime=None, endTime=None, isdone=None, features=None):
         update_data = {}
         folder_name = f"job_{jobid}"
 
         update_data["startTime"] = startTime
         update_data["endTime"] = endTime
         update_data["isdone"] = isdone
-        
+        update_data["title"] = jobTitle
+        update_data["description"] = jobDescription
+        update_data["userID"] = userid
+
         
         startTime = datetime.fromisoformat(startTime)
         endTime = datetime.fromisoformat(endTime)
@@ -73,7 +78,12 @@ class FirebaseHandler:
             return job.val()
         else:
             return None
-
+    def get_jobs_by_email(self, email):
+        jobs = self.jobs_ref.order_by_child("userID").equal_to(email).get()
+        if jobs.each():
+            return [job.val() for job in jobs.each()]
+        else:
+            return []
     def upload_files(self, folder_name, files):
         file_urls = []
         for file in files:
