@@ -26,6 +26,10 @@ def detect_handler(data):
     project_description = data["project_description"]
     features_selected = data["features_selected"]
     polygons = data["polygons"]
+    area = data["area"]
+    basemap = data["basemap"]
+    recipient_email = data["userid"]
+    
     # This function might preprocess the input data
     modelsDetection = ModelsDetection()
     firebase_handler = FirebaseHandler()
@@ -37,14 +41,13 @@ def detect_handler(data):
         print("checkpoint 1")
         job_id = f"job_{uuid.uuid4()}"
         startTime = datetime.now().isoformat()
-        recipient_email = "mshami2021@gmail.com"
         firebase_handler.add_job(
             userid=recipient_email,
             jobid=job_id,
             startTime=startTime,  # Example start time
             isdone=False,
             jobTitle=project_name,
-            jobDescription=project_description
+            jobDescription=project_description,
         )
 
         # Confirmation Email
@@ -64,7 +67,7 @@ def detect_handler(data):
             # Success
             print("checkpoint 5")
             endTime = datetime.now().isoformat()
-            firebase_handler.update_job(userid=recipient_email, jobTitle=project_name,jobDescription=project_description,jobid=job_id,startTime=startTime, endTime=endTime,features=output, isdone=True)
+            firebase_handler.update_job(area=area, basemap=basemap, userid=recipient_email, jobTitle=project_name,jobDescription=project_description,jobid=job_id,startTime=startTime, endTime=endTime,features=output, isdone=True)
 
             # Success Email
             html_content = plaintext_content = f"""
@@ -134,3 +137,49 @@ def jobs_retrieve_handler(data):
     else:
         # If 'email' is missing, return an error response
         return jsonify({'error': 'Invalid JSON data. Expected "email" field.'}), 400
+    
+    
+def login_handler(data):
+        
+    credentials = data
+    # Extract the relevant fields
+    # reporter_email = report_data.get('reporterEmail')
+    email = credentials.get('email')
+    password = credentials.get('password')
+    firebase_handler = FirebaseHandler()
+
+
+    try:
+        authentication_success = firebase_handler.authenticate_user(email, password)
+    except:
+        raise Exception("Account already registered")
+    
+    if not authentication_success:
+        raise Exception("Authentication failed")
+    
+    return jsonify({'message': 'Report received successfully', "authenticated": True}), 200
+    
+def registeration_handler(data):
+   # Extract the relevant fields
+        # reporter_email = report_data.get('reporterEmail')
+    credentials = data
+    email = credentials.get('email')
+    password = credentials.get('password')
+    first_name = credentials.get('firstName', "test")
+    last_name = credentials.get('lastName', "test")
+    isgoogle= credentials.get('isGoogle', False)
+    display_name = credentials.get('displayName', "test")
+    firebase_handler = FirebaseHandler()
+    if isgoogle:
+        try:
+            authentication_success = firebase_handler.add_user(display_name, email)
+            return jsonify({'message': 'Report received successfully', "authenticated": True}), 200
+        except:
+            raise Exception("Account already registered")
+    else:
+
+        try:
+            authentication_success = firebase_handler.register_user(first_name, last_name, email, password, password)
+            return jsonify({'message': 'Report received successfully', "authenticated": True}), 200
+        except Exception as e:
+            raise Exception(f"Account already registered")

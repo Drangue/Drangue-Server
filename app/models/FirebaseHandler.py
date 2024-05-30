@@ -35,7 +35,7 @@ class FirebaseHandler:
         }
         self.jobs_ref.child(jobid).set(job_data)
 
-    def update_job(self, userid, jobid, jobTitle, jobDescription,  startTime=None, endTime=None, isdone=None, features=None):
+    def update_job(self, area, basemap, userid, jobid, jobTitle, jobDescription,  startTime=None, endTime=None, isdone=None, features=None):
         update_data = {}
         folder_name = f"job_{jobid}"
 
@@ -45,6 +45,9 @@ class FirebaseHandler:
         update_data["title"] = jobTitle
         update_data["description"] = jobDescription
         update_data["userID"] = userid
+        update_data["job_id"] = jobid
+        update_data["area"] = area
+        update_data["basemap"] = basemap
 
         
         startTime = datetime.fromisoformat(startTime)
@@ -81,9 +84,18 @@ class FirebaseHandler:
     def get_jobs_by_email(self, email):
         jobs = self.jobs_ref.order_by_child("userID").equal_to(email).get()
         if jobs.each():
-            return [job.val() for job in jobs.each()]
+            return [
+                {
+                    "job_id": job.val().get("job_id"),
+                    "title": job.val().get("title"),
+                    "end_date": job.val().get("endTime"),
+                    "area": "{:.2f}".format(float(job.val().get("area")))
+                }
+                for job in jobs.each()
+            ]
         else:
             return []
+
     def upload_files(self, folder_name, files):
         file_urls = []
         for file in files:
@@ -100,3 +112,41 @@ class FirebaseHandler:
             url = self.storage.child(storage_path).get_url(None)
             file_urls.append(url)
         return file_urls
+    def add_user(self, display_name, email):
+        display_name = display_name + " "
+        display_name = display_name.split()
+        first_name = display_name[0]
+        last_name = display_name[1]
+        try:
+            # Add user details to the database, excluding the password
+            data = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email
+            }
+            self.db.child(self.tables["users"]).push(data)
+            return True  # Registration successful
+        except:
+            return False  # Registration failed
+    def authenticate_user(self, email, password):
+        try:
+            user = self.auth.sign_in_with_email_and_password(email, password)
+            return True  # Authentication successful
+        except:
+            return False  # Authentication failed
+        
+    def register_user(self, first_name, last_name, email, password, confirm_password):
+        if password != confirm_password:
+            return False  # Password confirmation failed
+        try:
+            user = self.auth.create_user_with_email_and_password(email, password)
+            # Add user details to the database, excluding the password
+            data = {
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email
+            }
+            self.db.child(self.tables["users"]).push(data)
+            return True  # Registration successful
+        except:
+            return False  # Registration failed

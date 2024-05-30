@@ -1,5 +1,5 @@
 from app import app
-from app.controllers import process_request, detect_handler, jobs_retrieve_handler,display_jobs_retrieve_handler
+from app.controllers import process_request, detect_handler, jobs_retrieve_handler,display_jobs_retrieve_handler, registeration_handler, login_handler
 from flask import request, jsonify
 
 @app.route('/')
@@ -36,7 +36,7 @@ def get_job():
     data = request.json
 
     jobs = jobs_retrieve_handler(data)
-    
+    print(jobs)
     return jobs
 
 @app.route('/job-display', methods=['POST'])
@@ -47,4 +47,33 @@ def get_jobs():
     job = display_jobs_retrieve_handler(data)
     
     return job
+
+
+@app.route('/login', methods=['POST', 'GET'],)
+def login():
+    try:
+        # Get the JSON data from the request
+        credentials = request.json
+        print("credentials data: ", credentials)
+        output  = login_handler(credentials)
+        return output
+
+    except Exception as e:
+        return jsonify({'error': str(e), "authenticated": False}), 400
+    
+    
+@app.route('/register', methods=['POST', 'GET'],)
+def register():
+    try:
+        # Get the JSON data from the request
+        credentials = request.json
+        print("credentials data: ", credentials)
+        output = registeration_handler(credentials)
+        return output
+        
+     
+    except Exception as e:
+        return jsonify({'error': str(e), "authenticated": True}), 400
+
+
 
