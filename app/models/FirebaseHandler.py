@@ -2,6 +2,9 @@ import pyrebase
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+import requests
+import tempfile
+
 class FirebaseHandler:
     def __init__(self):
         load_dotenv()
@@ -22,20 +25,21 @@ class FirebaseHandler:
         self.storage = self.firebase.storage()
 
         # Initialize the jobs table
-        self.jobs_ref = self.db.child("jobs")
+        self.jobs_ref = self.db.child("Drangeue_jobs")
 
-    def add_job(self, userid, jobid, startTime,  jobTitle, jobDescription, isdone=False,):
+    def add_job(self, thumbnail, userid, jobid, startTime,  jobTitle, jobDescription, isdone=False,):
         job_data = {
             "userID": userid,
             "title": jobTitle,
             "description": jobDescription,
             "jobid": jobid,
             "startTime": startTime,
-            "isdone": isdone
+            "isdone": isdone,
+            "thumbnail": thumbnail
         }
         self.jobs_ref.child(jobid).set(job_data)
 
-    def update_job(self, area, basemap, userid, jobid, jobTitle, jobDescription,  startTime=None, endTime=None, isdone=None, features=None):
+    def update_job(self, thumbnail, area, basemap, userid, jobid, jobTitle, jobDescription,  startTime=None, endTime=None, isdone=None, features=None):
         update_data = {}
         folder_name = f"job_{jobid}"
 
@@ -48,6 +52,7 @@ class FirebaseHandler:
         update_data["job_id"] = jobid
         update_data["area"] = area
         update_data["basemap"] = basemap
+        update_data["thumbnail"] = thumbnail
 
         
         startTime = datetime.fromisoformat(startTime)
@@ -88,8 +93,9 @@ class FirebaseHandler:
                 {
                     "job_id": job.val().get("job_id"),
                     "title": job.val().get("title"),
-                    "end_date": job.val().get("endTime"),
-                    "area": "{:.2f}".format(float(job.val().get("area")))
+                    "endTime": job.val().get("startTime"),
+                    "area": job.val().get("area"),
+                    "thumbnail": job.val().get("thumbnail")
                 }
                 for job in jobs.each()
             ]
@@ -145,8 +151,55 @@ class FirebaseHandler:
                 "first_name": first_name,
                 "last_name": last_name,
                 "email": email
-            }
+            }   
             self.db.child(self.tables["users"]).push(data)
             return True  # Registration successful
         except:
             return False  # Registration failed
+    def get_thumbnail(self, coordinates):
+        url = f"https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/pin-s+9ed4bd({coordinates[0]},{coordinates[1]})/{coordinates[0]},{coordinates[1]},14,0,0/800x600?access_token=pk.eyJ1IjoibXNoYW1pIiwiYSI6ImNsb2ZqMzFkbTBudTMycnFjM3QybW54MnAifQ.8SDg8QedEnsOGHU4AL9L4A"
+        
+        """
+        Downloads an image from a URL, uploads it to Firebase Storage, and returns the URL of the uploaded image.
+
+        :param url: URL of the image to download
+        :return: URL of the uploaded image in Firebase Storage
+        """
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Failed to download the image from {url}: {e}")
+            return None
+
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            tmp_file.write(response.content)
+            tmp_file_path = tmp_file.name
+
+        # Generate a unique file name using the current timestamp
+        filename = f"thumbnail_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
+        folder_name = "thumbnails"
+
+        try:
+            # Upload the file to Firebase Storage
+            storage_path = f"{folder_name}/{filename}"
+            self.storage.child(storage_path).put(tmp_file_path)
+
+            # Get the URL of the uploaded file
+            url = self.storage.child(storage_path).get_url(None)
+        finally:
+            # Clean up the temporary file
+            os.remove(tmp_file_path)
+
+        return url
+    def delete_table(self, table_name):
+        """
+        Deletes a table (node) from the Firebase Realtime Database.
+
+        :param table_name: Name of the table (node) to delete
+        """
+        try:
+            self.db.child(table_name).child(table_name).set(None)
+            print(f"Table '{table_name}' deleted successfully.")
+        except Exception as e:
+            print(f"Error deleting table '{table_name}': {e}")

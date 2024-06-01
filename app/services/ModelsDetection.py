@@ -40,7 +40,32 @@ class ModelsDetection:
         bbox = (min_x, min_y, max_x, max_y)
         
         return bbox
-    
+        
+    def centroid(self, polys):
+        """
+        Calculate the centroid of a single polygon or a list of polygons.
+
+        :param polygons: A polygon (list of tuples representing vertices) or a list of polygons
+        :return: Tuple representing the centroid (cx, cy)
+        """
+        # Handle the case where the input is a single polygon
+        if isinstance(polys[0], tuple):
+            polys = [polys]
+        
+        total_x = 0
+        total_y = 0
+        total_points = 0
+
+        for poly in polys:
+            num_vertices = len(poly)
+            if num_vertices == 0:
+                raise ValueError("Polygon must have at least one vertex")
+
+            total_x += sum(vertex[0] for vertex in poly)
+            total_y += sum(vertex[1] for vertex in poly)
+            total_points += num_vertices
+
+        return (total_x / total_points, total_y / total_points)
     def reproject_coordiantes(self, coordiantes, inEPSG=3857, outEPSG=4326):
         InSR = osr.SpatialReference()
         InSR.ImportFromEPSG(inEPSG)       # WGS84/Geographic
@@ -194,15 +219,18 @@ class ModelsDetection:
         self.create_geotiff_with_area(polygons=polygons, zoom_level=18, output_file=output_file, area_km2=area_km2)
         for feature in features_selected:
             results =  self.models[feature].predict("detection", imgsz=1280, conf=0.1, iou=0.5,save=False)
+            
             detected_polys = []
             for result in results:
-
                 try:
                     masks = result.masks.xy 
+                    print("id of mask: ", boxes.masks.cls)
+                    return 0
                 except:
                     continue
                 
                 for poly in masks:
+                    print(poly)
                     poly_list = poly.tolist()
                     # print(poly_list)
                     detected_coordinates = self.pixels_to_coordinates(result.path, poly.tolist())

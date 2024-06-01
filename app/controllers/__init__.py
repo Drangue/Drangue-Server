@@ -37,10 +37,16 @@ def detect_handler(data):
 
     # Function to process each polygon asynchronously
     def process_polygon(polygon, features_selected):
+        
+
         print(features_selected)
         print("checkpoint 1")
         job_id = f"job_{uuid.uuid4()}"
         startTime = datetime.now().isoformat()
+        
+        center_coords = modelsDetection.centroid(polygon)
+        thumbnail = firebase_handler.get_thumbnail(center_coords)
+        
         firebase_handler.add_job(
             userid=recipient_email,
             jobid=job_id,
@@ -48,14 +54,24 @@ def detect_handler(data):
             isdone=False,
             jobTitle=project_name,
             jobDescription=project_description,
+            thumbnail=thumbnail
         )
 
         # Confirmation Email
         recipient_name = "Mohammed Alshami"
         
-        subject = "Confirmation Email @noreply"
+        subject = f"[DRANGUE] Project Submission Received: {recipient_email}"
+        
         html_content = plaintext_content = f"""
-        A job with id {job_id} has been created, we'll notify you once the job is done
+        A job with id  has been created, we'll notify you once the job is done
+        This email confirms that we have received your submission for {project_name} with {job_id}.
+
+        We will now process the project and once it is ready for usage, an email will be sent to notify you.
+
+        Thank you for using Drangue and do contact us for any further enquiries.
+
+        Sincerely,
+        Drangue Team
         """
         emailSender.send_email(recipient_name, recipient_email, subject, html_content, plaintext_content)
 
@@ -67,7 +83,7 @@ def detect_handler(data):
             # Success
             print("checkpoint 5")
             endTime = datetime.now().isoformat()
-            firebase_handler.update_job(area=area, basemap=basemap, userid=recipient_email, jobTitle=project_name,jobDescription=project_description,jobid=job_id,startTime=startTime, endTime=endTime,features=output, isdone=True)
+            firebase_handler.update_job(thumbnail=thumbnail,area=area, basemap=basemap, userid=recipient_email, jobTitle=project_name,jobDescription=project_description,jobid=job_id,startTime=startTime, endTime=endTime,features=output, isdone=True)
 
             # Success Email
             html_content = plaintext_content = f"""

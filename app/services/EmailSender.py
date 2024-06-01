@@ -6,8 +6,8 @@ class EmailSender:
         load_dotenv()
         api_key = os.environ.get("MAILER_SENDER_API_KEY")
         self.mailer = emails.NewEmail(api_key)
-        self.sender_email = "MS_M5j3Co@trial-pr9084zywvmgw63d.mlsender.net"
-        self.reply_email = "MS_M5j3Co@trial-pr9084zywvmgw63d.mlsender.net"
+        self.sender_email = "MS_IT8kis@trial-yzkq340okmx4d796.mlsender.net"
+        self.reply_email = "MS_IT8kis@trial-yzkq340okmx4d796.mlsender.net"
 
     def send_email(self, recipient_name, recipient_email, subject, html_content, plaintext_content):
         mail_body = {}
@@ -34,3 +34,5 @@ class EmailSender:
         self.mailer.set_plaintext_content(plaintext_content, mail_body)
         self.mailer.set_reply_to(reply_to, mail_body)
         return self.mailer.send(mail_body)
+    
+    
