@@ -36,12 +36,12 @@ def detect_handler(data):
     emailSender = EmailSender()
 
     # Function to process each polygon asynchronously
-    def process_polygon(polygon, features_selected):
+    def process_polygon(job_id, polygon, features_selected):
         
 
         print(features_selected)
         print("checkpoint 1")
-        job_id = f"job_{uuid.uuid4()}"
+        
         startTime = datetime.now().isoformat()
         
         center_coords = modelsDetection.centroid(polygon)
@@ -113,8 +113,10 @@ def detect_handler(data):
 
 
     # Start a new thread to process the polygon asynchronously
-    threading.Thread(target=process_polygon, args=(polygons,features_selected)).start()
-    return "Success"
+    job_id = f"job_{uuid.uuid4()}"
+    
+    threading.Thread(target=process_polygon, args=(job_id, polygons,features_selected)).start()
+    return {"Status": "Success", "job_id": job_id}
 
 
 
@@ -124,7 +126,7 @@ def display_jobs_retrieve_handler(data):
     if 'jobid' in data:
         user_email = data['jobid']
 
-
+        
         # Initialize the Firebase handler
         firebase_handler = FirebaseHandler()
 

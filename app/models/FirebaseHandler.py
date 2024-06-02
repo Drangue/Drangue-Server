@@ -77,7 +77,7 @@ class FirebaseHandler:
                     update_data[key]["polygons"] = polygons
 
         # print("Update data:", update_data)
-        self.jobs_ref.child("jobs").child(jobid).set(update_data)
+        self.jobs_ref.child("Drangeue_jobs").child(jobid).set(update_data)
         # self.jobs_ref.child(jobid).update(update_data)
 
     def get_job(self, jobid):

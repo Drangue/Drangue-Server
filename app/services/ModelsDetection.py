@@ -170,7 +170,7 @@ class ModelsDetection:
                 params = ["--from=","--to="]
             command = [
                 "python", R"C:\Users\USER\Desktop\Work\drangue\Drangue-Server\app\services\tms2geotiff.py",
-                "-s", "http://mt0.google.com/vt/lyrs=y&hl=en&&s=Ga&x={x}&y={y}&z={z}",
+                "-s", "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
                 f"{params[0]}{lower_left_lat},{lower_left_lon}",
                 f"{params[1]}{upper_right_lat},{upper_right_lon}",
                 "-z", str(zoom_level),
@@ -211,45 +211,63 @@ class ModelsDetection:
         # Close the TIFF file
         ds = None
         return geo_coords
-
+    def xywh_to_polygon(self, xywh):
+        x, y, w, h = xywh
+        return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
     
     def detect_polygons(self, polygons,zoom, output_file, area_km2, features_selected):
         
         returned_output = {}
         self.create_geotiff_with_area(polygons=polygons, zoom_level=18, output_file=output_file, area_km2=area_km2)
         for feature in features_selected:
-            results =  self.models[feature].predict("detection", imgsz=1280, conf=0.1, iou=0.5,save=False)
+            results =  self.models[feature].predict("detection", imgsz=1280, conf=0.1, iou=0.2,save=True)
             
+            detected_polys_files = []
             detected_polys = []
             for result in results:
                 try:
-                    masks = result.masks.xy 
-                    print("id of mask: ", boxes.masks.cls)
-                    return 0
+                    if result.boxes:
+                        masks = result.boxes.xywh 
+                    if result.masks:
+                        masks = result.masks.xy
+                    box = result.boxes[0]
+                    class_id = int(box.cls)
+                    object_name = self.models[feature].names[class_id]
                 except:
                     continue
                 
+      
                 for poly in masks:
-                    print(poly)
-                    poly_list = poly.tolist()
+                    # poly_list = poly.tolist()
                     # print(poly_list)
-                    detected_coordinates = self.pixels_to_coordinates(result.path, poly.tolist())
+                    if result.boxes:
+                        poly = self.xywh_to_polygon(poly.tolist())
+                    if result.masks:
+                        poly = poly.tolist()
+                    detected_coordinates = self.pixels_to_coordinates(result.path, poly)
                     # print(detected_coordinates)
+                    
+                    detected_coordinates_class = {
+                        "polygons": detected_coordinates,
+                        "class_name": object_name
+                    }
 
-                    detected_polys.append(detected_coordinates)
+                    detected_polys.append(detected_coordinates_class)
+                    detected_polys_files.append(detected_coordinates)
             
             
             
             if len(detected_polys) == 0:
                 continue
-            shapefile_output = self.polygons_to_shapefile(detected_polys)
-            geojson_output = self.polygons_to_geojson(detected_polys)
+            shapefile_output = self.polygons_to_shapefile(detected_polys_files)
+            geojson_output = self.polygons_to_geojson(detected_polys_files)
             
             print(f"length of polys for {feature}: ", len(detected_polys))
             returned_output[feature] = {
                 "polygons": detected_polys,
                 "shapefile": shapefile_output, 
-                "geojson": geojson_output
+                "geojson": geojson_output,
+                "num_instances": len(detected_coordinates)
             }
         shutil.rmtree('detection')
  
