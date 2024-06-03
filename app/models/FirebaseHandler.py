@@ -27,15 +27,16 @@ class FirebaseHandler:
         # Initialize the jobs table
         self.jobs_ref = self.db.child("Drangeue_jobs")
 
-    def add_job(self, thumbnail, userid, jobid, startTime,  jobTitle, jobDescription, isdone=False,):
+    def add_job(self,area, thumbnail, userid, jobid, startTime,  jobTitle, jobDescription, isdone=False,):
         job_data = {
             "userID": userid,
             "title": jobTitle,
             "description": jobDescription,
-            "jobid": jobid,
+            "job_id": jobid,
             "startTime": startTime,
             "isdone": isdone,
-            "thumbnail": thumbnail
+            "thumbnail": thumbnail,
+            "area": area
         }
         self.jobs_ref.child(jobid).set(job_data)
 
@@ -65,6 +66,7 @@ class FirebaseHandler:
                 geojsonpath = value.get("geojson")
                 shapefiles = value.get("shapefile")
                 polygons = value.get("polygons")
+                num_instances = value.get("num_instances")
 
                 update_data[key] = {}
                 if geojsonpath is not None:
@@ -75,6 +77,8 @@ class FirebaseHandler:
                     update_data[key]["shapefiles"] = file_urls[0]
                 if polygons is not None:
                     update_data[key]["polygons"] = polygons
+                if num_instances is not None:
+                    update_data[key]["num_instances"] = num_instances
 
         # print("Update data:", update_data)
         self.jobs_ref.child("Drangeue_jobs").child(jobid).set(update_data)

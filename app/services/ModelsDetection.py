@@ -13,7 +13,7 @@ class ModelsDetection:
             'landslidemodel': r"C:\Users\USER\Desktop\Work\drangue\Drangue-Server\app\services\landslide.pt",
             'landslidemodel2': r"C:\Users\USER\Desktop\Work\drangue\Drangue-Server\app\services\building.pt",
             'landslidemodel3': r"C:\Users\USER\Desktop\Work\drangue\Drangue-Server\app\services\tree.pt",
-            'landslidemodel4': r"C:\Users\USER\Desktop\Work\drangue\Drangue-Server\app\services\landuse1.pt",
+            'landslidemodel4': r"C:\Users\USER\Desktop\Work\drangue\Drangue-Server\app\services\landuse2.pt",
             # Add more models as needed
         }
         self.models = {}
@@ -220,16 +220,17 @@ class ModelsDetection:
         returned_output = {}
         self.create_geotiff_with_area(polygons=polygons, zoom_level=18, output_file=output_file, area_km2=area_km2)
         for feature in features_selected:
-            results =  self.models[feature].predict("detection", imgsz=1280, conf=0.1, iou=0.2,save=True)
+            results =  self.models[feature].predict("detection", imgsz=1280, conf=0.1, iou=0.2,save=False)
             
             detected_polys_files = []
             detected_polys = []
             for result in results:
                 try:
-                    if result.boxes:
-                        masks = result.boxes.xywh 
-                    if result.masks:
+                    if feature in ["landslidemodel", "landslidemodel4"]:
                         masks = result.masks.xy
+                    else:
+                        masks = result.boxes.xywh 
+
                     box = result.boxes[0]
                     class_id = int(box.cls)
                     object_name = self.models[feature].names[class_id]
@@ -240,10 +241,11 @@ class ModelsDetection:
                 for poly in masks:
                     # poly_list = poly.tolist()
                     # print(poly_list)
-                    if result.boxes:
-                        poly = self.xywh_to_polygon(poly.tolist())
-                    if result.masks:
+                    if feature in ["landslidemodel", "landslidemodel4"]:
                         poly = poly.tolist()
+                    else:
+                        poly = self.xywh_to_polygon(poly.tolist())
+          
                     detected_coordinates = self.pixels_to_coordinates(result.path, poly)
                     # print(detected_coordinates)
                     
@@ -263,11 +265,12 @@ class ModelsDetection:
             geojson_output = self.polygons_to_geojson(detected_polys_files)
             
             print(f"length of polys for {feature}: ", len(detected_polys))
+            num_instances = len(detected_polys)
             returned_output[feature] = {
                 "polygons": detected_polys,
                 "shapefile": shapefile_output, 
                 "geojson": geojson_output,
-                "num_instances": len(detected_coordinates)
+                "num_instances": num_instances
             }
         shutil.rmtree('detection')
  

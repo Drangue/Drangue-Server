@@ -54,7 +54,8 @@ def detect_handler(data):
             isdone=False,
             jobTitle=project_name,
             jobDescription=project_description,
-            thumbnail=thumbnail
+            thumbnail=thumbnail,
+            area=area
         )
 
         # Confirmation Email
