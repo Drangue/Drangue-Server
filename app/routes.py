@@ -1,6 +1,7 @@
 from app import app
-from app.controllers import process_request, detect_handler, jobs_retrieve_handler,display_jobs_retrieve_handler, registeration_handler, login_handler
+from app.controllers import process_request, detect_handler, jobs_retrieve_handler,display_jobs_retrieve_handler, registeration_handler, login_handler, generate_api_key_handler, delete_api_key_handler
 from flask import request, jsonify
+from app.helpers.decorators import api_key_required
 
 @app.route('/')
 def index():
@@ -12,6 +13,7 @@ def index():
 
     return f"Result: {result}"
 
+# @api_key_required
 @app.route('/detect', methods=['POST'])
 def detect():
     # Get JSON data from request
@@ -74,6 +76,30 @@ def register():
      
     except Exception as e:
         return jsonify({'error': str(e), "authenticated": True}), 400
+    
 
 
+@app.route('/api_key/generate', methods=['POST'])
+def generate_api_key():
+    # Get JSON data from request
+    data = request.json
 
+    try:
+        output = generate_api_key_handler(data)
+        return output
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+@app.route('api_key/delete', methods=['POST'])
+def delete_api_key():
+    # Get JSON data from request
+    data = request.json
+
+    try:
+        output = delete_api_key_handler(data)
+        return output
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400

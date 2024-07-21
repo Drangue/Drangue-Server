@@ -202,3 +202,37 @@ def registeration_handler(data):
             return jsonify({'message': 'Report received successfully', "authenticated": True}), 200
         except Exception as e:
             raise Exception(f"Account already registered")
+        
+
+def generate_api_key_handler(data):
+    email = data['email']
+
+    if not email:
+        return jsonify({'error': 'Invalid JSON data. Expected "email" field.'}), 400
+    
+    firebase_handler = FirebaseHandler()
+
+    try:
+        api_key = firebase_handler.generate_user_api_key(email=email)
+        return jsonify({'api_key': api_key})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+
+def delete_api_key_handler(data):
+    email = data['email']
+    api_key = data['api_key']
+
+    if not email or not api_key:
+        return jsonify({'error': 'Invalid JSON data. Expected "email" and "api_key" fields.'}), 400
+
+    
+    firebase_handler = FirebaseHandler()
+
+    try:
+        firebase_handler.delete_user_api_key(email=email, api_key=api_key)
+        return jsonify({'message': 'API key deleted successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    

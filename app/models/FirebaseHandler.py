@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 import requests
 import tempfile
+import secrets
 
 class FirebaseHandler:
     def __init__(self):
@@ -207,3 +208,65 @@ class FirebaseHandler:
             print(f"Table '{table_name}' deleted successfully.")
         except Exception as e:
             print(f"Error deleting table '{table_name}': {e}")
+
+    # TODO: my assumptions that the user table will have a key called api_key
+    def check_user_api_key(self, api_key):
+        """
+        Checks if the API key provided by the user is valid.
+
+        :param api_key: API key
+        :return: True if the API key is valid, False otherwise
+        """
+        try:
+            # Get the user details using the API key
+            user = self.db.child(self.tables["users"]).order_by_child("api_key").equal_to(api_key).get()
+            if user.each():
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(f"Error checking API key: {e}")
+            return False
+
+    # generate api keys using secrets.token_urlsafe(16)
+    def generate_user_api_key(self, email):
+        """
+        Generates an API key for the user, stores it in the database and returns that api key.
+
+        :param email: Email of the user
+        :return: API key generated for the user
+        """
+        api_key = secrets.token_urlsafe(16)
+        try:
+            # Update the user details with the generated API key
+            self.db.child(self.tables["users"]).child(email).update({"api_key": api_key})
+            return api_key
+        except Exception as e:
+            print(f"Error generating API key: {e}")
+            return None
+        
+    # delete api key of the user that user selected
+    def delete_user_api_key(self, email, api_key):
+        """
+        Deletes the specified API key of the user.
+
+        :param email: Email of the user
+        :param api_key: API key to delete
+        """
+        try:
+            # Fetch the current API key for the user
+            user_data = self.db.child(self.tables["users"]).child(email).get().val()
+            if not user_data or 'api_key' not in user_data:
+                print(f"No API key found for user '{email}'.")
+                return
+
+            # Check if the specified API key matches the user's API key
+            if user_data['api_key'] == api_key:
+                # Update the user details to remove the API key
+                self.db.child(self.tables["users"]).child(email).update({"api_key": None})
+                print(f"API key '{api_key}' deleted successfully.")
+            else:
+                print(f"API key '{api_key}' does not match the user's current API key.")
+
+        except Exception as e:
+            print(f"Error deleting API key '{api_key}': {e}")
