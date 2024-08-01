@@ -3,7 +3,7 @@ name: Deploy to AWS Lambda
 on:
   push:
     branches:
-      - nazar/nogpu-lambda 
+      - nazar-nogpu-lambda 
 
 jobs:
   deploy:
@@ -51,4 +51,4 @@ jobs:
 
     - name: Deploy to Lambda
       run: |
-        zappa update nazar/nogpu-lambda || zappa deploy nazar/nogpu-lambda
+        zappa update main || zappa deploy main
