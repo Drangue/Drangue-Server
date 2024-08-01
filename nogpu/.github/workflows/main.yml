@@ -3,7 +3,7 @@ name: Deploy to AWS Lambda
 on:
   push:
     branches:
-      - nazar-nogpu-lambda 
+      - main
 
 jobs:
   deploy:
