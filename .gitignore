@@ -6,5 +6,7 @@ __pycache__
 
 # Ignore serverenv folder
 serverenv/
+gpuenv/
+nogpuenv/
 
 node_modules/
