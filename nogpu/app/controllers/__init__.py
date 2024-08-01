@@ -1,10 +1,10 @@
-from datetime import datetime
-import uuid
+# from datetime import datetime
+# import uuid
 
 from flask import jsonify
 from app.models.FirebaseHandler import FirebaseHandler
 from app.services.EmailSender import EmailSender
-import threading
+# import threading
 
 
 firebase_handler = FirebaseHandler()
