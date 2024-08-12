@@ -5,11 +5,64 @@ from flask import jsonify
 from app.models.FirebaseHandler import FirebaseHandler
 from app.services.EmailSender import EmailSender
 import threading
+import requests
 
 
 firebase_handler = FirebaseHandler()
 emailSender = EmailSender()
 
+from dotenv import load_dotenv
+import os
+# Load environment variables from .env file
+load_dotenv()
+
+# Get the BASE_ENDPOINT variable
+base_endpoint = os.getenv('BASE_ENDPOINT')
+def send_request(json_data, endpoint_path):
+    try:
+        # Combine the base endpoint with the specific endpoint path
+        full_url = base_endpoint + endpoint_path
+        
+        # Send the JSON data to the full URL
+        response = requests.post(full_url, json=json_data)
+        print(response)
+        
+        # Raise an error if the request was unsuccessful
+        response.raise_for_status()
+        
+        print("end point called", response.json())
+
+        # Get the JSON response from the endpoint
+        return response.json()
+    
+    except requests.exceptions.RequestException as e:
+        # Handle any errors that occur during the request
+        print("end point called, but error", str(e))
+        return {'error': str(e)}
+  
+
+def detect_handler(project_payload):
+    
+    # check api_key
+     
+    
+    
+    try:
+        project_detection = send_request(project_payload, "/detect") 
+        # check return output
+        
+        # Success
+        # Failed
+        # Invalid Api Key
+        # Already Exceeded credit limit
+    except:
+        raise Exception("Couldn't Create The Project")
+    
+    if not project_detection:
+        raise Exception("Authentication failed")
+    
+    return jsonify({'message': 'Project Created successfully'}), 200
+    
 def get_thumbnail(center_coords_payload):
     center_coords = center_coords_payload.get("center_coords", (0, 0))
     thumbnail = firebase_handler.get_thumbnail(center_coords)
