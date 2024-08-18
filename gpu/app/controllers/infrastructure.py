@@ -1,4 +1,4 @@
-from app.controllers import process_detect, detection_bp
+from app.controllers import process_detect
 import asyncio
 from app import app
 from flask import request, jsonify, Blueprint

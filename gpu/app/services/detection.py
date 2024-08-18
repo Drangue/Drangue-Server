@@ -1,7 +1,7 @@
 # from datetime import datetime
 # import uuid
 # from flask import jsonify
-# from app.classes.ModelsDetection import ModelsDetection
+# from app.classes import ModelsDetection
 # import threading
 # import requests
 # from dotenv import load_dotenv
