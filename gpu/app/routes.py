@@ -1,24 +1,13 @@
 from app import app
-from app.controllers import detect_handler
-from flask import request, jsonify
-from flask import redirect, url_for
+from app.controllers.infrastructure import infrastructure_bp
+from app.controllers.landslide import landslide_bp
+from app.controllers.tree import tree_bp
+from app.controllers.damage_assessment import damage_assessment_bp
 
 
-@app.route('/detect', methods=['POST'])
-def detect():
-    # Get JSON data from request
-    data = request.json
-    print(data)
 
-    # Check if 'features' array exists in JSON data
-    if 'polygons' in data and isinstance(data['polygons'], list):
-        # Process features using controller function
-        result = detect_handler(data)
-    
-        # Return the result as JSON
-        return jsonify({'result': result})
-    else:
-        # If 'features' array is missing or not a list, return an error response
-        return jsonify({'error': 'Invalid JSON data. Expected "features" array.'}), 400
-    
-
+# Register the blueprint with the application
+app.register_blueprint(landslide_bp, url_prefix='/v1/detect')
+app.register_blueprint(infrastructure_bp, url_prefix='/v1/detect')
+app.register_blueprint(tree_bp, url_prefix='/v1/detect')
+app.register_blueprint(damage_assessment_bp, url_prefix='/v1/detect')

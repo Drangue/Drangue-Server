@@ -1,5 +1,5 @@
 from app import app
-from app.controllers import jobs_retrieve_handler,display_jobs_retrieve_handler, registeration_handler, login_handler, get_thumbnail, create_job, update_job , send_pending_email, send_confirmation_email,  send_failed_email
+from app.controllers import jobs_retrieve_handler,display_jobs_retrieve_handler, registeration_handler, login_handler, get_thumbnail, create_job, update_job , send_pending_email, send_confirmation_email,  send_failed_email, detect_handler
 from flask import request, jsonify
 from flask import redirect, url_for
 
@@ -7,6 +7,14 @@ from flask import redirect, url_for
 def index():
     # Redirect users to drangue.ai
     return redirect("https://drangue.ai")
+
+@app.route('/detect', methods=['POST'])
+def detect():
+    # Get JSON data from request
+    data = request.json
+
+    project = detect_handler(data)
+    return project
 
     
 @app.route('/user-jobs', methods=['POST'])
