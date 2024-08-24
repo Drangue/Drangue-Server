@@ -4,11 +4,10 @@
         "aws_region": "ap-southeast-1",  
         "project_name": "drangue-lambda-app", 
         "runtime": "python3.11",
-        "s3_bucket": "zappa-drangue-deployments",
+        "s3_bucket": "zappa-drangue-deployments-test-nazar",
         "timeout_seconds": 30,
         "memory_size": 128,
         "keep_warm": false,
-        "slim_handler": true,
         "environment_variables": {
             "ENV": "production",
             "DEBUG": "False",
@@ -20,8 +19,6 @@
             "FIREBASE_MESSAGING_SENDER_ID": "<FIREBASE_MESSAGING_SENDER_ID>",
             "FIREBASE_APP_ID": "<FIREBASE_APP_ID>",
             "MAILER_SENDER_API_KEY": "<MAILER_SENDER_API_KEY>"
-        },
-        "manage_roles": false,
-        "role_name": "zappa-execution-role"
+        }
     }
 }
