@@ -121,6 +121,7 @@ def update_job(job_payload):
     # Default to None if not provided
     features = job_payload.get('features', None)
     center = job_payload.get('center', None)  # Default to None if not provided
+    mappingOption = job_payload.get("mappingOption", "ownData")
 
     # Call function to handle successful job update
     firebase_handler.update_job(
@@ -135,7 +136,8 @@ def update_job(job_payload):
         jobDescription=jobDescription,
         features=features,
         isdone=isdone,
-        center=center
+        center=center,
+        mappingOption=mappingOption
     )
 
     return jsonify({'Success': "true"})

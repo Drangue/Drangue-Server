@@ -1,0 +1,4 @@
+nogpuenv/
+.vscode/
+
+.env

@@ -45,9 +45,10 @@ class FirebaseHandler:
             "thumbnail": thumbnail,
             "area": area
         }
-        self.jobs_ref.child(jobid).set(job_data)
+        self.db.child(self.tables["jobs"]).child(
+            self.tables["jobs"]).set(job_data)
 
-    def update_job(self, thumbnail, area, basemap, userid, jobid, jobTitle, jobDescription,  startTime=None, endTime=None, isdone=None, features=None, center=(2.903955339201735, 101.68038385653196)):
+    def update_job(self, thumbnail, area, basemap, userid, jobid, jobTitle, jobDescription,  startTime=None, endTime=None, isdone=None, features=None, center=(2.903955339201735, 101.68038385653196), mappingOption="basemap"):
         update_data = {}
         folder_name = f"job_{jobid}"
 
@@ -62,7 +63,7 @@ class FirebaseHandler:
         update_data["basemap"] = basemap
         update_data["thumbnail"] = thumbnail
         update_data["center"] = center
-
+        update_data["mappingOption"] = mappingOption
         startTime = datetime.fromisoformat(startTime)
         endTime = datetime.fromisoformat(endTime)
         update_data["processing_time"] = (endTime - startTime).total_seconds()
@@ -88,31 +89,37 @@ class FirebaseHandler:
                     update_data[key]["num_instances"] = num_instances
 
         # print("Update data:", update_data)
-        self.jobs_ref.child("Drangeue_jobs").child(jobid).set(update_data)
+        self.db.child(self.tables["jobs"]).child(jobid).set(update_data)
         # self.jobs_ref.child(jobid).update(update_data)
 
     def get_job(self, jobid):
-        job = self.jobs_ref.child(jobid).get()
+        job = self.db.child(self.tables["jobs"]).child(jobid).get()
         if job.val():
             return job.val()
         else:
             return None
 
     def get_jobs_by_email(self, email):
-        jobs = self.jobs_ref.order_by_child("userID").equal_to(email).get()
-        if jobs.each():
+        jobs = self.db.child(self.tables["jobs"]).order_by_child(
+            "userID").equal_to(email).get()
+        
+        job_data = jobs.each()
+        
+        if job_data:
             return [
                 {
-                    "job_id": job.val().get("job_id"),
-                    "title": job.val().get("title"),
-                    "endTime": job.val().get("startTime"),
-                    "area": job.val().get("area"),
-                    "thumbnail": job.val().get("thumbnail")
+                    "job_id": job_val.get("job_id"),
+                    "title": job_val.get("title"),
+                    "endTime": job_val.get("startTime"),
+                    "area": job_val.get("area"),
+                    "thumbnail": job_val.get("thumbnail")
                 }
-                for job in jobs.each()
+                for job in job_data
+                if (job_val := job.val()) is not None  # Use walrus operator to avoid redundant job.val() calls
             ]
         else:
             return []
+
 
     def upload_files(self, folder_name, files):
         file_urls = []
@@ -254,8 +261,7 @@ class FirebaseHandler:
         except Exception as e:
             print(f"Error retrieving profile for email {email}: {e}")
             return None
-        
-        
+
     def update_profile(self, first_name, last_name, email, old_password, new_password):
         """
         Updates the profile of a user. If a new password is provided, updates the password.
@@ -271,17 +277,20 @@ class FirebaseHandler:
             # If new_password is provided, update the password
             if new_password:
                 # Authenticate the user with the old password
-                user = self.auth.sign_in_with_email_and_password(email, old_password)
+                user = self.auth.sign_in_with_email_and_password(
+                    email, old_password)
                 id_token = user['idToken']
                 self.auth.delete_user_account(id_token)
                 # Update the password
-                
-                self.auth.create_user_with_email_and_password(email, new_password)
+
+                self.auth.create_user_with_email_and_password(
+                    email, new_password)
                 print(f"Password changed successfully for user: {email}")
-            
+
             # Update the user details in the database
-            users = self.db.child(self.tables["users"]).order_by_child("email").equal_to(email).get()
-            
+            users = self.db.child(self.tables["users"]).order_by_child(
+                "email").equal_to(email).get()
+
             if users.each():
                 # Assuming there's only one user with this email, update the first result
                 for user in users.each():
@@ -294,10 +303,11 @@ class FirebaseHandler:
                         "email": email
                     }
 
-                    self.db.child(self.tables["users"]).child(user_key).update(updated_data)
+                    self.db.child(self.tables["users"]).child(
+                        user_key).update(updated_data)
                     print(f"Profile updated successfully for user: {email}")
                     return True
-            
+
             else:
                 print(f"No profile found for email: {email}")
                 return False
@@ -307,23 +317,26 @@ class FirebaseHandler:
             return False
 # # from firebase_handler import FirebaseHandler  # Adjust this import based on your file structure
 
-# # Instantiate the FirebaseHandler class
+
+# # # Instantiate the FirebaseHandler class
 # firebase_handler = FirebaseHandler()
 
 # # Define user details
 # first_name = "Mohammed"
 # last_name = "Alshami"
-# email = "test1@drangue.ai"
-
+# email = "test2@drangue.ai"
+# password = confirm_password = "AvenBestOf2017"
 # # Register the user with Firebase Authentication
-# # registration_success = firebase_handler.register_user(first_name, last_name, email, password, confirm_password)
+# registration_success = firebase_handler.register_user(
+#     first_name, last_name, email, password, confirm_password)
 
 # # Check if registration was successful
-# if 1 ==1:
+# if 1 == 1:
 #     print("User registered successfully.")
 
 #     # Add user details to the Firebase Realtime Database
-#     add_user_success = firebase_handler.add_user(f"{first_name} {last_name}", email)
+#     add_user_success = firebase_handler.add_user(
+#         f"{first_name} {last_name}", email)
 
 #     # Check if adding user to database was successful
 #     if add_user_success:
